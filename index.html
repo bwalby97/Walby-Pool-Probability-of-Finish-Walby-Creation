@@ -115,6 +115,7 @@ td.name{text-align:left;font-weight:500}
 .who{color:var(--ink3);font-weight:400;font-size:12px;margin-left:8px}
 .busy{opacity:.5;transition:opacity .15s}
 @media (max-width:640px){main{padding:14px 12px 30px}header{padding:14px 12px 0}.pbar{display:none}}
+.pkhead{margin:0 0 12px;font-size:15px}.pkgrp{margin:8px 0}.pkgrp h4{margin:0 0 5px;font:600 13px Barlow,sans-serif;color:var(--ink2)}.chips{display:flex;flex-wrap:wrap;gap:5px}.chip{border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:13px;background:var(--surface)}.chip.ok{background:#e3f3e6;border-color:#8fcb9b}.chip.bad{background:#f6e1e1;border-color:#d99;color:#7a2a2a;text-decoration:line-through}.chip .sd{color:var(--ink3);margin-right:4px;font-size:11px}#pksel{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 8px;border-radius:8px;font:400 14px Barlow,sans-serif;min-width:260px}
 </style>
 </head>
 <body>
@@ -135,7 +136,7 @@ td.name{text-align:left;font-weight:500}
     <span class="lbl">Participant</span> <select id="who" aria-label="Choose a participant" style="border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 8px;border-radius:8px;font:400 14px Barlow,sans-serif;max-width:260px"></select> <input type="search" id="find" placeholder="Find an entry" aria-label="Find an entry">
   </div>
   <p class="note" id="oddsrc"></p>
-  <div class="vtabs" id="vtabs" role="tablist"><button role="tab" data-v="bs" aria-selected="true">Bracket and Standings</button><button role="tab" data-v="cmp" aria-selected="false">Compare entries</button></div>
+  <div class="vtabs" id="vtabs" role="tablist"><button role="tab" data-v="bs" aria-selected="true">Bracket and Standings</button><button role="tab" data-v="cmp" aria-selected="false">Compare entries</button><button role="tab" data-v="pk" aria-selected="false">Entry picks</button></div>
 <div id="v-bs">
 <section class="card bk"><h2>Tournament bracket</h2>
 <p class="note">Gray cards are games that have been played. Dashed cards are still to play: click a team to see what happens to everyone’s chances if that team wins.</p>
@@ -146,6 +147,11 @@ td.name{text-align:left;font-weight:500}
   <section class="card"><h2>All entries</h2><p class="note" id="tnote"></p>
     <div class="tablewrap"><table id="tbl"><thead></thead><tbody></tbody></table></div></section>
   <p class="foot" id="foot"></p>
+</div>
+<div id="v-pk" hidden>
+  <section class="card"><h2>Entry picks</h2><p class="note">Every pick one entry made, round by round. Green with a check is a correct pick, red with a line through it is wrong or the team is already out, and plain is still alive.</p>
+    <div class="pick"><label><span>Participant</span><select id="pksel"></select></label></div>
+    <div id="pkbox"></div></section>
 </div>
 <div id="v-cmp" hidden>
   <section class="card"><h2>Compare entries</h2><p class="note">Chance of finishing in the top N, for up to four entries. Top 1 is winning the pool.</p>
@@ -227,7 +233,7 @@ function gameCard(g,w){
   }).join('');
   return '<div class="gm '+st+'"><div class="hd"><span>'+head+'</span></div>'+rows+'</div>';
 }
-document.querySelectorAll('#vtabs button').forEach(function(b){b.onclick=function(){document.querySelectorAll('#vtabs button').forEach(function(x){x.setAttribute('aria-selected',x===b)});$('v-bs').hidden=b.dataset.v!=='bs';$('v-cmp').hidden=b.dataset.v!=='cmp';if(b.dataset.v==='cmp')render()}});
+document.querySelectorAll('#vtabs button').forEach(function(b){b.onclick=function(){document.querySelectorAll('#vtabs button').forEach(function(x){x.setAttribute('aria-selected',x===b)});$('v-bs').hidden=b.dataset.v!=='bs';$('v-cmp').hidden=b.dataset.v!=='cmp';$('v-pk').hidden=b.dataset.v!=='pk';if(b.dataset.v!=='bs')render()}});
 function refresh(){$('calc').style.display='flex';setTimeout(function(){render();$('calc').style.display='none'},30)}
 function render(){ctx();
   var P=D.pools[state.pool],r=compute();
@@ -236,7 +242,7 @@ function render(){ctx();
   $('banner').innerHTML=D.sample?'<div class="banner"><b>Sample data.</b> This preview uses made-up teams and 300 made-up entries so you can try the bracket and what-if tools. Real picks load after the 2027 brackets come out.</div>':(D.note?'<div class="banner"><b>Test.</b> '+D.note+'</div>':'');
   $('oddsrc').innerHTML=P.oddsSource&&state.mode==='vegas'?'<b>Vegas odds source:</b> '+P.oddsSource+'. Win chances for each game are built from these national title odds.':(state.mode==='user'?'<b>Brian’s odds</b> start out equal to the Vegas odds ('+(P.oddsSource||'')+').':'');
   var tabs=$('tabs');tabs.innerHTML='';
-  Object.keys(D.pools).forEach(function(k){var b=document.createElement('button');b.setAttribute('role','tab');b.textContent=D.pools[k].label;b.setAttribute('aria-selected',k===state.pool);b.onclick=function(){state.pool=k;state.pick=[];state.only=null;state.hypo={};refresh()};tabs.appendChild(b)});
+  Object.keys(D.pools).forEach(function(k){var b=document.createElement('button');b.setAttribute('role','tab');b.textContent=D.pools[k].label;b.setAttribute('aria-selected',k===state.pool);b.onclick=function(){state.pool=k;state.pick=[];state.only=null;state.pv=null;state.hypo={};refresh()};tabs.appendChild(b)});
   document.querySelectorAll('#mode button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.m===state.mode)});
   if(r.error){$('kpis').innerHTML='';$('games').innerHTML='';$('gnote').textContent='Exact odds start at the Sweet 16 ('+r.undecided+' games are still open). Check back when 15 or fewer games remain.';$('tbl').querySelector('tbody').innerHTML='';$('tnote').textContent='';return;}
   var rows=r.entries.map(function(x,i){x.i=i;x.picks=P.entries[i].picks;x.who=P.entries[i].who;return x});
@@ -283,9 +289,27 @@ function render(){ctx();
   for(var s=0;s<4;s++)(function(s){var l=document.createElement('label');l.innerHTML='<span><i class="sw" style="background:'+COLORS[s]+'"></i>Entry '+(s+1)+'</span>';var se=document.createElement('select');var o=document.createElement('option');o.value='';o.textContent='None';se.appendChild(o);
     byLast.forEach(function(x){var op=document.createElement('option');op.value=x.i;op.textContent=x.name;if(state.pick[s]===x.i)op.selected=true;se.appendChild(op)});
     se.onchange=function(){state.pick[s]=se.value===''?null:+se.value;drawChart(rows)};l.appendChild(se);pk.appendChild(l)})(s);
-  drawChart(rows);
+  drawChart(rows);renderPicks(rows);
   $('foot').textContent='Odds are for entertainment. Probabilities come from every possible result of the remaining games, weighted by the odds picked above. Created by Brian Walby.';
 }
+function renderPicks(rows){
+  var box=$('pkbox'),sel=$('pksel');
+  sel.innerHTML=$('who').innerHTML.replace('All participants','Choose a participant');
+  sel.value=state.pv==null?'':String(state.pv);
+  var x=state.pv==null?null:rows[state.pv];
+  if(!x){box.innerHTML='<p class="note">Choose a participant to see all 63 of their picks.</p>';return}
+  var G=E.GAMES,res=D.results,out={},g,r,rg;
+  for(g=0;g<63;g++)if(res[g]!=null)E.participants(g,res,D.teams).forEach(function(t){if(t&&t!=='x'&&t!==res[g])out[t]=1});
+  var chip=function(g){var t=x.picks[g],st=res[g]!=null?(res[g]===t?'ok':'bad'):(out[t]?'bad':'');return '<span class="chip '+st+'">'+teamLabel(t)+(st==='ok'?' ✓':'')+'</span>'};
+  var h='<p class="pkhead"><b>'+x.name+'</b>'+(x.who&&x.who!==x.name?' ('+x.who+')':'')+'<br>'+x.base+' points so far, '+x.max+' possible. Chance to win the pool: '+pct(x.pWin)+'. Champion pick: <b>'+x.picks[62]+'</b></p>';
+  for(r=0;r<6;r++){
+    h+='<h3 style="margin:14px 0 4px;font:600 16px Barlow,sans-serif">'+ROUND[r]+'</h3>';
+    if(r<4)for(rg=0;rg<4;rg++){var c='';for(g=0;g<63;g++)if(G[g].round===r&&G[g].region===rg)c+=chip(g);h+='<div class="pkgrp"><h4>'+D.regions[rg]+' region</h4><div class="chips">'+c+'</div></div>'}
+    else{var c2='';for(g=0;g<63;g++)if(G[g].round===r)c2+=chip(g);h+='<div class="chips">'+c2+'</div>'}
+  }
+  box.innerHTML=h;
+}
+$('pksel').onchange=function(){state.pv=this.value===''?null:+this.value;render()};
 function drawChart(rows){
   var sel=state.pick.map(function(i,s){return i==null?null:{r:rows[i],c:COLORS[s],s:s}}).filter(Boolean);
   var W=1000,H=340,m={l:52,r:20,t:14,b:44},iw=W-m.l-m.r,ih=H-m.t-m.b,N=10;
