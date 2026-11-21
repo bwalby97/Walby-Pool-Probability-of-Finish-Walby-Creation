@@ -335,6 +335,14 @@ function drawChart(rows){
 document.querySelectorAll('#mode button').forEach(function(b){b.onclick=function(){state.mode=b.dataset.m;refresh()}});
 $('who').onchange=function(){state.only=this.value===''?null:+this.value;render()};
 $('find').oninput=function(){state.q=this.value;render()};
+var lastAsOf=null;
+function pollResults(){fetch('results.json?'+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(j){
+  if(!j||j.asOf===lastAsOf)return;lastAsOf=j.asOf;
+  Object.keys(j.pools||{}).forEach(function(k){if(D.pools[k])D.pools[k].results=j.pools[k]});
+  if(D.pools.main)D0.results=D.pools.main.results;
+  if(j.label)D.asOf=j.label;if(j.note!=null)D.note=j.note;
+  cache={};refresh()}).catch(function(){})}
+pollResults();setInterval(pollResults,120000);
 render();
 })();
 </script>
