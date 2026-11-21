@@ -272,9 +272,10 @@ function render(){ctx();
   $('tbl').querySelector('tbody').innerHTML=list.map(function(x){
     return '<tr><td class="l">'+x.rank+(x.tied?'T':'')+'</td><td class="name">'+x.name+(x.who&&x.who!==x.name?'<span class="who">'+x.who+'</span>':'')+(x.cnt[5]===0?'<span class="pill out">Out of the money</span>':'')+'</td><td>'+x.base+'</td><td>'+x.max+'</td><td>'+pct(x.pWin)+'<span class="pbar"><i style="width:'+Math.min(100,x.pWin/maxW*100)+'%"></i></span></td><td>'+pct(x.top[3])+'</td><td>'+pct(x.top[5])+'</td><td>'+pct(x.top[10])+'</td><td>'+(pot!=null?money(x.exp):pct(x.ePrize))+'</td><td>'+x.any1.toLocaleString()+' of '+r.leaves.toLocaleString()+'</td></tr>'}).join('');
   $('tnote').textContent=(pot!=null?'Payout is each entry’s average share of a '+money(pot)+' pool. ':'')+'Ties split the prizes for the places they span equally. Click a heading to sort.';
-  var lastOf=function(x){var n=(x.who||x.name||'').replace(/\s+(jr|sr|ii|iii|iv)\.?$/i,'').trim().split(/\s+/);return n[n.length-1]};
-  var byLast=rows.slice().sort(function(a,b){return lastOf(a).localeCompare(lastOf(b))||(a.who||a.name).localeCompare(b.who||b.name)||a.name.localeCompare(b.name)});
-  var ws=$('who');ws.innerHTML='<option value="">All participants</option>'+byLast.map(function(x){var w=(x.who||x.name).trim(),n=w.split(/\s+/),disp=n.length>1?lastOf(x)+', '+n.slice(0,-1).join(' '):w;return '<option value="'+x.i+'">'+disp+(x.who&&x.who!==x.name?' — '+x.name:'')+'</option>'}).join('');
+  var dn=function(x){var re=/^[A-Za-z.'’-]+( [A-Za-z.'’-]+)+$/,w=(x.who||'').trim();if(re.test(w))return w;var n=(x.name||'').replace(/['’]s (Main )?Picks.*$/i,'').replace(/\s+(Picks|CC|Main|ChampionsClub|Champ)\b.*$/i,'').replace(/\s+The Founder$/i,'').trim();return re.test(n)?n:(w||n||x.name||'')};
+  var parts=function(x){var t=dn(x).replace(/\s+(jr|sr|ii|iii|iv)\.?$/i,'').split(/\s+/);if(t.length>1&&t[t.length-1].length===1)t.unshift(t.pop());var l=t.pop();return {last:l,first:t.join(' ')}};
+  var byLast=rows.slice().sort(function(a,b){var A=parts(a),B=parts(b);return A.last.localeCompare(B.last,undefined,{sensitivity:'base'})||A.first.localeCompare(B.first,undefined,{sensitivity:'base'})||a.name.localeCompare(b.name)});
+  var ws=$('who');ws.innerHTML='<option value="">All participants</option>'+byLast.map(function(x){var p=parts(x),disp=p.first?p.last+', '+p.first:p.last;return '<option value="'+x.i+'">'+disp+(x.name!==dn(x)?' — '+x.name:'')+'</option>'}).join('');
   ws.value=state.only==null?'':String(state.only);
   // pick selectors
   if(!state.pick.length)state.pick=sorted.slice(0,4).map(function(x){return x.i});
