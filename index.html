@@ -342,7 +342,7 @@ function pollResults(){fetch('results.json?'+Date.now(),{cache:'no-store'}).then
   if(D.pools.main)D0.results=D.pools.main.results;
   if(j.label)D.asOf=j.label;if(j.note!=null)D.note=j.note;
   cache={};refresh()}).catch(function(){})}
-pollResults();setInterval(pollResults,120000);
+pollResults();setInterval(pollResults,600000);
 render();
 })();
 </script>
