@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Walby Pool Probability of Finish Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+color-scheme:light;
+--navy:#00274c; --maize:#ffcb05; --bg:#f2f4f7; --surface:#ffffff; --line:#dde2e9;
+--ink:#0d1b2a; --ink2:#4a5666; --ink3:#6b7686;
+--s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --grid:#e6eaf0;
+--bar:#00274c; --bar-bg:#e8ecf2; --good:#0a7d33; --warn:#9a5b00;
+}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#0b1522;--surface:#12202f;--line:#25364a;--ink:#eaf0f7;--ink2:#b5c2d3;--ink3:#8a9bb0;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--grid:#1d2c3e;--bar:#ffcb05;--bar-bg:#1f3146;--good:#4cc27a;--warn:#e0a33a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.45 Barlow,system-ui,-apple-system,Segoe UI,sans-serif;font-variant-numeric:tabular-nums}
+header{background:var(--navy);color:#fff;padding:18px 20px 0}
+.wrap{max-width:1240px;margin:0 auto}
+h1{font:700 clamp(24px,4vw,36px)/1.05 "Barlow Condensed",Barlow,sans-serif;margin:0;letter-spacing:.2px}
+h1 span{color:var(--maize)}
+.sub{color:#b9c8dc;font-size:13px;margin:4px 0 14px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tabs button{appearance:none;border:0;background:transparent;color:#b9c8dc;font:600 16px "Barlow Condensed",Barlow,sans-serif;letter-spacing:.4px;padding:10px 18px;cursor:pointer;border-radius:8px 8px 0 0}
+.tabs button[aria-selected=true]{background:var(--bg);color:var(--navy)}
+@media (prefers-color-scheme:dark){.tabs button[aria-selected=true]{color:var(--maize)}}
+.tabs button:focus-visible,.seg button:focus-visible,th button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--maize);outline-offset:1px}
+main{padding:18px 20px 40px}
+.banner{background:#fff7d6;border:1px solid #f0d56a;color:#5a4600;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:14px}
+@media (prefers-color-scheme:dark){.banner{background:#3a3210;border-color:#6b5a14;color:#f4e3a0}}
+.bar{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;margin-bottom:14px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{appearance:none;border:0;background:transparent;color:var(--ink2);font:500 14px Barlow,sans-serif;padding:8px 14px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--navy);color:#fff}
+@media (prefers-color-scheme:dark){.seg button[aria-pressed=true]{background:var(--maize);color:#00274c}}
+.lbl{font-size:13px;color:var(--ink2);margin-right:8px}
+input[type=search]{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 12px;border-radius:8px;font:400 14px Barlow,sans-serif;min-width:220px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi b{display:block;font:700 28px/1.1 "Barlow Condensed",sans-serif}
+.kpi span{font-size:13px;color:var(--ink2)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.card h2{font:600 20px "Barlow Condensed",sans-serif;margin:0 0 2px}
+.card p.note{margin:0 0 12px;color:var(--ink2);font-size:13px}
+.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.game{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px}
+.game .rd{font-size:12px;color:var(--ink3);margin-bottom:4px}
+.game div.t{display:flex;justify-content:space-between;gap:8px}
+.game .p{color:var(--ink2)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{position:sticky;top:0;background:var(--surface);text-align:right;font:500 12px Barlow,sans-serif;color:var(--ink3);border-bottom:2px solid var(--line);padding:0}
+th button{appearance:none;border:0;background:none;color:inherit;font:inherit;padding:8px 8px;cursor:pointer;width:100%;text-align:inherit}
+th.l,td.l{text-align:left}
+td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+tr:hover td{background:rgba(0,39,76,.04)}
+td.name{text-align:left;font-weight:500}
+.pbar{display:inline-block;vertical-align:middle;width:56px;height:6px;border-radius:3px;background:var(--bar-bg);margin-left:8px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--bar);border-radius:3px}
+.pill{font-size:11px;padding:1px 7px;border-radius:10px;border:1px solid var(--line);color:var(--ink3);margin-left:6px}
+.pill.out{color:var(--warn);border-color:var(--warn)}
+.pill.lock{color:var(--good);border-color:var(--good)}
+.pick{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+.pick label{font-size:12px;color:var(--ink2);display:flex;flex-direction:column;gap:3px}
+.pick select{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 8px;border-radius:8px;font:400 14px Barlow,sans-serif;min-width:190px}
+.pick .sw{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+#chart{width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;margin-top:6px}
+.legend i{display:inline-block;width:18px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.foot{color:var(--ink3);font-size:12px;margin-top:20px}
+.tip{position:fixed;pointer-events:none;background:var(--navy);color:#fff;padding:7px 10px;border-radius:6px;font-size:12px;display:none;z-index:5;max-width:240px}
+.busy{opacity:.5;transition:opacity .15s}
+@media (max-width:640px){main{padding:14px 12px 30px}header{padding:14px 12px 0}.pbar{display:none}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>Walby Pool <span>Probability of Finish</span> Calculator</h1>
+<div class="sub" id="sub"></div>
+<div class="tabs" role="tablist" id="tabs"></div>
+</div></header>
+<main><div class="wrap">
+<div id="banner"></div>
+<div class="bar">
+<div><span class="lbl">Odds used for each game</span>
+<span class="seg" id="mode" role="group" aria-label="Odds mode">
+<button data-m="equal" aria-pressed="false">Equally possible</button>
+<button data-m="vegas" aria-pressed="true">Vegas odds</button>
+<button data-m="user" aria-pressed="false">Brian's odds</button>
+</span></div>
+<input type="search" id="find" placeholder="Find an entry" aria-label="Find an entry">
+</div>
+<div class="kpis" id="kpis"></div>
+<section class="card"><h2>Games left</h2><p class="note" id="gnote"></p><div class="games" id="games"></div></section>
+<section class="card"><h2>Compare entries</h2><p class="note">Chance of finishing in the top N, for up to four entries. Top 1 is winning the pool.</p>
+<div class="pick" id="pick"></div>
+<div id="chartbox"></div><div class="legend" id="legend"></div>
+<details style="margin-top:10px"><summary style="cursor:pointer;color:var(--ink2);font-size:13px">Show as table</summary><div class="tablewrap" id="ctable"></div></details>
+</section>
+<section class="card"><h2>All entries</h2><p class="note" id="tnote"></p>
+<div class="tablewrap"><table id="tbl"><thead></thead><tbody></tbody></table></div></section>
+<p class="foot" id="foot"></p>
+</div></main>
+<div class="tip" id="tip"></div>
+<script src="data.js"></script>
+<script src="engine.js"></script>
+<script>
+(function(){
+var D=window.POOL_DATA,E=window.POF,ROUND=['Round of 64','Round of 32','Sweet 16','Elite 8','Final Four','Championship'];
+var state={pool:Object.keys(D.pools)[0],mode:'vegas',sort:{k:'pWin',dir:-1},pick:[],q:''};
+var cache={};
+var $=function(i){return document.getElementById(i)};
+var pct=function(x,d){if(x==null)return '';if(x>0&&x<0.0005)return '<0.1%';if(x>0.9995&&x<1)return '>99.9%';return (x*100).toFixed(d==null?1:d)+'%'};
+var money=function(x){return '$'+Math.round(x).toLocaleString()};
+var COLORS=['var(--s1)','var(--s2)','var(--s3)','var(--s4)'];
+function weights(pool,mode){return mode==='equal'?null:(mode==='vegas'?pool.vegas:pool.user)}
+function compute(){
+var key=state.pool+'|'+state.mode;if(cache[key])return cache[key];
+var P=D.pools[state.pool];
+var r=E.run({teams:D.teams,results:D.results,entries:P.entries,mode:state.mode,weights:weights(P,state.mode)||{},prizes:P.prizes,maxUndecided:16});
+cache[key]=r;return r;
+}
+function rankByPoints(rows){
+var s=rows.map(function(r){return r.base}).sort(function(a,b){return b-a});
+rows.forEach(function(r){r.rank=s.indexOf(r.base)+1;r.tied=s.filter(function(x){return x===r.base}).length>1});
+}
+function render(){
+var P=D.pools[state.pool],r=compute();
+$('sub').textContent=D.season+' · '+D.asOf;
+$('banner').innerHTML=D.sample?'<div class="banner"><b>Sample data.</b> This preview shows part of the 2013 Main Pool from the Elite 8 so you can see how the calculator works. Real picks load after the 2027 brackets come out.</div>':'';
+var tabs=$('tabs');tabs.innerHTML='';
+Object.keys(D.pools).forEach(function(k){var b=document.createElement('button');b.setAttribute('role','tab');b.textContent=D.pools[k].label;b.setAttribute('aria-selected',k===state.pool);b.onclick=function(){state.pool=k;state.pick=[];render()};tabs.appendChild(b)});
+document.querySelectorAll('#mode button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.m===state.mode)});
+if(r.error){$('kpis').innerHTML='';$('games').innerHTML='';$('gnote').textContent='Exact odds start at the Sweet 16 ('+r.undecided+' games are still open). Check back when 15 or fewer games remain.';$('tbl').querySelector('tbody').innerHTML='';$('tnote').textContent='';return;}
+var rows=r.entries.map(function(x,i){x.i=i;x.picks=P.entries[i].picks;return x});
+rankByPoints(rows);
+var pot=P.pot!=null?P.pot:(P.fee?P.fee*rows.length:null);
+rows.forEach(function(x){x.exp=pot!=null?x.ePrize*pot:null;x.alive=x.cnt[5]>0;x.locked=x.min>0&&x.top[1]>0.9999});
+// KPIs
+var sorted=rows.slice().sort(function(a,b){return b.pWin-a.pWin});
+var alive=rows.filter(function(x){return x.any1>0}).length;
+$('kpis').innerHTML=[
+['Entries',rows.length],['Games left',r.undecided],['Possible outcomes',r.leaves.toLocaleString()],
+['Still able to win',alive],['Favorite',sorted[0].name+' ('+pct(sorted[0].pWin)+')']
+].map(function(k){return '<div class="kpi"><b>'+k[1]+'</b><span>'+k[0]+'</span></div>'}).join('');
+// games
+var W=weights(P,state.mode)||{},G=E.GAMES,winner={},gs=[];
+for(var g=0;g<63;g++){if(D.results[g]!=null)winner[g]=D.results[g];}
+for(g=0;g<63;g++){if(D.results[g]==null){var pr=E.participants(g,winner,D.teams);gs.push({g:g,a:pr[0],b:pr[1]});
+/* later rounds depend on earlier winners: show only games whose both teams are known */
+if(!pr[0]||!pr[1]||pr[0]===undefined||pr[1]===undefined){gs.pop();}}}
+$('gnote').textContent=state.mode==='equal'?'Every game is treated as a coin flip.':'Chance each team wins its next game, from the odds you picked above.';
+$('games').innerHTML=gs.map(function(x){var wa=W[x.a]!=null?W[x.a]:1e-4,wb=W[x.b]!=null?W[x.b]:1e-4,pa=state.mode==='equal'?.5:wa/(wa+wb);
+var sa=D.seeds&&D.seeds[x.a]?'('+D.seeds[x.a]+') ':'',sb=D.seeds&&D.seeds[x.b]?'('+D.seeds[x.b]+') ':'';
+return '<div class="game"><div class="rd">'+ROUND[G[x.g].round]+'</div><div class="t"><span>'+sa+x.a+'</span><span class="p">'+pct(pa,0)+'</span></div><div class="t"><span>'+sb+x.b+'</span><span class="p">'+pct(1-pa,0)+'</span></div></div>'}).join('')||'<p class="note">No games left.</p>';
+// table
+var cols=[['rank','Rank','l'],['name','Entry','l'],['base','Points'],['max','Max points'],['pWin','Win'],['t3','Top 3'],['t5','Top 5'],['t10','Top 10'],['exp',pot!=null?'Expected payout':'Expected share'],['cnt1','Outcomes that win']];
+var th=$('tbl').querySelector('thead');
+th.innerHTML='<tr>'+cols.map(function(c){return '<th class="'+(c[2]||'')+'"><button data-k="'+c[0]+'">'+c[1]+(state.sort.k===c[0]?(state.sort.dir<0?' ▼':' ▲'):'')+'</button></th>'}).join('')+'</tr>';
+th.querySelectorAll('button').forEach(function(b){b.onclick=function(){var k=b.dataset.k;state.sort=state.sort.k===k?{k:k,dir:-state.sort.dir}:{k:k,dir:(k==='name'||k==='rank')?1:-1};render()}});
+var val=function(x,k){return k==='t3'?x.top[3]:k==='t5'?x.top[5]:k==='t10'?x.top[10]:k==='cnt1'?x.any1:k==='exp'?x.ePrize:x[k]};
+var q=state.q.toLowerCase();
+var list=rows.filter(function(x){return !q||x.name.toLowerCase().indexOf(q)>=0}).sort(function(a,b){var A=val(a,state.sort.k),B=val(b,state.sort.k);if(typeof A==='string')return state.sort.dir*A.localeCompare(B);return state.sort.dir*(A-B)||a.rank-b.rank});
+var maxW=Math.max.apply(null,rows.map(function(x){return x.pWin}))||1;
+$('tbl').querySelector('tbody').innerHTML=list.map(function(x){
+return '<tr><td class="l">'+x.rank+(x.tied?'T':'')+'</td><td class="name">'+x.name+(x.cnt[5]===0?'<span class="pill out">Out of the money</span>':'')+'</td><td>'+x.base+'</td><td>'+x.max+'</td><td>'+pct(x.pWin)+'<span class="pbar"><i style="width:'+Math.min(100,x.pWin/maxW*100)+'%"></i></span></td><td>'+pct(x.top[3])+'</td><td>'+pct(x.top[5])+'</td><td>'+pct(x.top[10])+'</td><td>'+(pot!=null?money(x.exp):pct(x.ePrize))+'</td><td>'+x.any1.toLocaleString()+' of '+r.leaves.toLocaleString()+'</td></tr>'}).join('');
+$('tnote').textContent=(pot!=null?'Payout is each entry’s average share of a '+money(pot)+' pool. ':'')+'Ties split the prizes for the places they span equally. Click a heading to sort.';
+// pick selectors
+if(!state.pick.length)state.pick=sorted.slice(0,4).map(function(x){return x.i});
+var pk=$('pick');pk.innerHTML='';
+for(var s=0;s<4;s++)(function(s){var l=document.createElement('label');l.innerHTML='<span><i class="sw" style="background:'+COLORS[s]+'"></i>Entry '+(s+1)+'</span>';var se=document.createElement('select');var o=document.createElement('option');o.value='';o.textContent='None';se.appendChild(o);
+rows.slice().sort(function(a,b){return a.name.localeCompare(b.name)}).forEach(function(x){var op=document.createElement('option');op.value=x.i;op.textContent=x.name;if(state.pick[s]===x.i)op.selected=true;se.appendChild(op)});
+se.onchange=function(){state.pick[s]=se.value===''?null:+se.value;drawChart(rows)};l.appendChild(se);pk.appendChild(l)})(s);
+drawChart(rows);
+$('foot').textContent='Odds are for entertainment. Probabilities come from every possible result of the remaining games, weighted by the odds picked above. Created by Brian Walby.';
+}
+function drawChart(rows){
+var sel=state.pick.map(function(i,s){return i==null?null:{r:rows[i],c:COLORS[s],s:s}}).filter(Boolean);
+var W=1000,H=340,m={l:52,r:20,t:14,b:44},iw=W-m.l-m.r,ih=H-m.t-m.b,N=10;
+var mx=0;sel.forEach(function(o){mx=Math.max(mx,o.r.top[10])});var st=mx>.5?.2:mx>.25?.1:mx>.1?.05:.02;mx=Math.min(1,Math.max(st*2,Math.ceil(mx/st-1e-9)*st));
+var X=function(n){return m.l+(n-1)/(N-1)*iw},Y=function(p){return m.t+ih-(p/mx)*ih};
+var svg='<svg id="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Chance of finishing in the top N for the selected entries">';
+for(var t=0;t<=Math.round(mx/st);t++){var v=t*st;svg+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--grid)"/><text x="'+(m.l-8)+'" y="'+(Y(v)+4)+'" text-anchor="end" font-size="12" fill="var(--ink3)">'+Math.round(v*100)+'%</text>'}
+for(var n=1;n<=N;n++)svg+='<text x="'+X(n)+'" y="'+(H-24)+'" text-anchor="middle" font-size="12" fill="var(--ink3)">'+n+'</text>';
+svg+='<text x="'+(m.l+iw/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="12" fill="var(--ink3)">Finish in the top…</text>';
+sel.forEach(function(o){var d='';for(var n=1;n<=N;n++)d+=(n===1?'M':'L')+X(n)+','+Y(o.r.top[n]);
+svg+='<path d="'+d+'" fill="none" stroke="'+o.c+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+for(n=1;n<=N;n++)svg+='<circle cx="'+X(n)+'" cy="'+Y(o.r.top[n])+'" r="4" fill="'+o.c+'" stroke="var(--surface)" stroke-width="2"/>';});
+svg+='<rect id="hit" x="'+m.l+'" y="'+m.t+'" width="'+iw+'" height="'+ih+'" fill="transparent"/></svg>';
+$('chartbox').innerHTML=svg;
+$('legend').innerHTML=sel.map(function(o){return '<span><i style="background:'+o.c+'"></i>'+o.r.name+'</span>'}).join('');
+var tip=$('tip'),hit=$('hit'),svgEl=$('chart');
+hit.onmousemove=function(ev){var b=svgEl.getBoundingClientRect(),px=(ev.clientX-b.left)/b.width*W,n=Math.max(1,Math.min(N,Math.round((px-m.l)/iw*(N-1))+1));
+tip.innerHTML='<b>Top '+n+'</b><br>'+sel.map(function(o){return o.r.name+': '+pct(o.r.top[n])}).join('<br>');tip.style.display='block';tip.style.left=(ev.clientX+14)+'px';tip.style.top=(ev.clientY+14)+'px'};
+hit.onmouseleave=function(){tip.style.display='none'};
+var h='<table><thead><tr><th class="l">Entry</th>';for(n=1;n<=N;n++)h+='<th>Top '+n+'</th>';h+='</tr></thead><tbody>';
+sel.forEach(function(o){h+='<tr><td class="name">'+o.r.name+'</td>';for(n=1;n<=N;n++)h+='<td>'+pct(o.r.top[n])+'</td>';h+='</tr>'});
+$('ctable').innerHTML=h+'</tbody></table>';
+}
+document.querySelectorAll('#mode button').forEach(function(b){b.onclick=function(){state.mode=b.dataset.m;$('kpis').classList.add('busy');setTimeout(function(){render();$('kpis').classList.remove('busy')},20)}});
+$('find').oninput=function(){state.q=this.value;render()};
+render();
+})();
+</script>
+</body>
+</html>
