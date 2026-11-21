@@ -132,8 +132,9 @@ td.name{text-align:left;font-weight:500}
         <button data-m="vegas" aria-pressed="true">Vegas odds</button>
         <button data-m="user" aria-pressed="false">Brian's odds</button>
       </span></div>
-    <input type="search" id="find" placeholder="Find an entry" aria-label="Find an entry">
+    <span class="lbl">Participant</span> <select id="who" aria-label="Choose a participant" style="border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 8px;border-radius:8px;font:400 14px Barlow,sans-serif;max-width:260px"></select> <input type="search" id="find" placeholder="Find an entry" aria-label="Find an entry">
   </div>
+  <p class="note" id="oddsrc"></p>
   <div class="vtabs" id="vtabs" role="tablist"><button role="tab" data-v="bs" aria-selected="true">Bracket and Standings</button><button role="tab" data-v="cmp" aria-selected="false">Compare entries</button></div>
 <div id="v-bs">
 <section class="card bk"><h2>Tournament bracket</h2>
@@ -168,8 +169,10 @@ var pct=function(x,d){if(x==null)return '';if(x>0&&x<0.0005)return '<0.1%';if(x>
 var money=function(x){return '$'+Math.round(x).toLocaleString()};
 var COLORS=['var(--s1)','var(--s2)','var(--s3)','var(--s4)'];
 
+var D0={teams:D.teams,results:D.results,seeds:D.seeds,regions:D.regions};
+function ctx(){var P=D.pools[state.pool]||{};['teams','results','seeds','regions'].forEach(function(k){D[k]=P[k]||D0[k]})}
 function weights(pool,mode){return mode==='equal'?null:(mode==='vegas'?pool.vegas:pool.user)}
-function winnersNow(){
+function winnersNow(){ctx();
   /* official results plus valid what-if picks (a what-if is dropped if its team can no longer reach that game) */
   var G=E.GAMES,w={},hy={},g;
   for(g=0;g<63;g++){
@@ -179,7 +182,7 @@ function winnersNow(){
   }
   state.hypo=hy;return w;
 }
-function compute(){
+function compute(){ctx();
   var w=winnersNow(),key=state.pool+'|'+state.mode+'|'+JSON.stringify(state.hypo);
   if(cache[key])return cache[key];
   var P=D.pools[state.pool],res={},g,hk=Object.keys(state.hypo);
@@ -196,7 +199,7 @@ function rankByPoints(rows){
 
 function teamLabel(t){if(t==null||t==='x')return '';var s=D.seeds&&D.seeds[t];return (s?'<span class="sd">'+s+'</span>':'')+t}
 function feederText(f){var F=E.GAMES[f];return 'Winner of '+(F.region>=0?D.regions[F.region]+' ':'')+ROUND[F.round]+' game '+(F.slot+1)}
-function renderBracket(){
+function renderBracket(){ctx();
   var G=E.GAMES,w=winnersNow(),first=D.firstRound||0,hn=Object.keys(state.hypo).length;
   var rounds=[];for(var r=first;r<6;r++)rounds.push(r);
   var stat=function(g){return D.results[g]!=null?'final':state.hypo[g]!=null?'hyp':(function(){var p=E.participants(g,w,D.teams);return p[0]&&p[1]&&p[0]!=='x'?'open':'wait'})()};
@@ -226,13 +229,14 @@ function gameCard(g,w){
 }
 document.querySelectorAll('#vtabs button').forEach(function(b){b.onclick=function(){document.querySelectorAll('#vtabs button').forEach(function(x){x.setAttribute('aria-selected',x===b)});$('v-bs').hidden=b.dataset.v!=='bs';$('v-cmp').hidden=b.dataset.v!=='cmp';if(b.dataset.v==='cmp')render()}});
 function refresh(){$('calc').style.display='flex';setTimeout(function(){render();$('calc').style.display='none'},30)}
-function render(){
+function render(){ctx();
   var P=D.pools[state.pool],r=compute();
   renderBracket();
   $('sub').textContent=D.season+' · '+D.asOf;
   $('banner').innerHTML=D.sample?'<div class="banner"><b>Sample data.</b> This preview uses made-up teams and 300 made-up entries so you can try the bracket and what-if tools. Real picks load after the 2027 brackets come out.</div>':(D.note?'<div class="banner"><b>Test.</b> '+D.note+'</div>':'');
+  $('oddsrc').innerHTML=P.oddsSource&&state.mode==='vegas'?'<b>Vegas odds source:</b> '+P.oddsSource+'. Win chances for each game are built from these national title odds.':(state.mode==='user'?'<b>Brian’s odds</b> start out equal to the Vegas odds ('+(P.oddsSource||'')+').':'');
   var tabs=$('tabs');tabs.innerHTML='';
-  Object.keys(D.pools).forEach(function(k){var b=document.createElement('button');b.setAttribute('role','tab');b.textContent=D.pools[k].label;b.setAttribute('aria-selected',k===state.pool);b.onclick=function(){state.pool=k;state.pick=[];state.hypo={};refresh()};tabs.appendChild(b)});
+  Object.keys(D.pools).forEach(function(k){var b=document.createElement('button');b.setAttribute('role','tab');b.textContent=D.pools[k].label;b.setAttribute('aria-selected',k===state.pool);b.onclick=function(){state.pool=k;state.pick=[];state.only=null;state.hypo={};refresh()};tabs.appendChild(b)});
   document.querySelectorAll('#mode button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.m===state.mode)});
   if(r.error){$('kpis').innerHTML='';$('games').innerHTML='';$('gnote').textContent='Exact odds start at the Sweet 16 ('+r.undecided+' games are still open). Check back when 15 or fewer games remain.';$('tbl').querySelector('tbody').innerHTML='';$('tnote').textContent='';return;}
   var rows=r.entries.map(function(x,i){x.i=i;x.picks=P.entries[i].picks;x.who=P.entries[i].who;return x});
@@ -263,16 +267,20 @@ function render(){
   th.querySelectorAll('button').forEach(function(b){b.onclick=function(){var k=b.dataset.k;state.sort=state.sort.k===k?{k:k,dir:-state.sort.dir}:{k:k,dir:(k==='name'||k==='rank')?1:-1};render()}});
   var val=function(x,k){return k==='t3'?x.top[3]:k==='t5'?x.top[5]:k==='t10'?x.top[10]:k==='cnt1'?x.any1:k==='exp'?x.ePrize:x[k]};
   var q=state.q.toLowerCase();
-  var list=rows.filter(function(x){return !q||(x.name+' '+(x.who||'')).toLowerCase().indexOf(q)>=0}).sort(function(a,b){var A=val(a,state.sort.k),B=val(b,state.sort.k);if(typeof A==='string')return state.sort.dir*A.localeCompare(B);return state.sort.dir*(A-B)||a.rank-b.rank});
+  var list=rows.filter(function(x){if(state.only!=null&&x.i!==state.only)return false;return !q||(x.name+' '+(x.who||'')).toLowerCase().indexOf(q)>=0}).sort(function(a,b){var A=val(a,state.sort.k),B=val(b,state.sort.k);if(typeof A==='string')return state.sort.dir*A.localeCompare(B);return state.sort.dir*(A-B)||a.rank-b.rank});
   var maxW=Math.max.apply(null,rows.map(function(x){return x.pWin}))||1;
   $('tbl').querySelector('tbody').innerHTML=list.map(function(x){
     return '<tr><td class="l">'+x.rank+(x.tied?'T':'')+'</td><td class="name">'+x.name+(x.who&&x.who!==x.name?'<span class="who">'+x.who+'</span>':'')+(x.cnt[5]===0?'<span class="pill out">Out of the money</span>':'')+'</td><td>'+x.base+'</td><td>'+x.max+'</td><td>'+pct(x.pWin)+'<span class="pbar"><i style="width:'+Math.min(100,x.pWin/maxW*100)+'%"></i></span></td><td>'+pct(x.top[3])+'</td><td>'+pct(x.top[5])+'</td><td>'+pct(x.top[10])+'</td><td>'+(pot!=null?money(x.exp):pct(x.ePrize))+'</td><td>'+x.any1.toLocaleString()+' of '+r.leaves.toLocaleString()+'</td></tr>'}).join('');
   $('tnote').textContent=(pot!=null?'Payout is each entry’s average share of a '+money(pot)+' pool. ':'')+'Ties split the prizes for the places they span equally. Click a heading to sort.';
+  var lastOf=function(x){var n=(x.who||x.name||'').replace(/\s+(jr|sr|ii|iii|iv)\.?$/i,'').trim().split(/\s+/);return n[n.length-1]};
+  var byLast=rows.slice().sort(function(a,b){return lastOf(a).localeCompare(lastOf(b))||(a.who||a.name).localeCompare(b.who||b.name)||a.name.localeCompare(b.name)});
+  var ws=$('who');ws.innerHTML='<option value="">All participants</option>'+byLast.map(function(x){var w=(x.who||x.name).trim(),n=w.split(/\s+/),disp=n.length>1?lastOf(x)+', '+n.slice(0,-1).join(' '):w;return '<option value="'+x.i+'">'+disp+(x.who&&x.who!==x.name?' — '+x.name:'')+'</option>'}).join('');
+  ws.value=state.only==null?'':String(state.only);
   // pick selectors
   if(!state.pick.length)state.pick=sorted.slice(0,4).map(function(x){return x.i});
   var pk=$('pick');pk.innerHTML='';
   for(var s=0;s<4;s++)(function(s){var l=document.createElement('label');l.innerHTML='<span><i class="sw" style="background:'+COLORS[s]+'"></i>Entry '+(s+1)+'</span>';var se=document.createElement('select');var o=document.createElement('option');o.value='';o.textContent='None';se.appendChild(o);
-    rows.slice().sort(function(a,b){return a.name.localeCompare(b.name)}).forEach(function(x){var op=document.createElement('option');op.value=x.i;op.textContent=x.name;if(state.pick[s]===x.i)op.selected=true;se.appendChild(op)});
+    byLast.forEach(function(x){var op=document.createElement('option');op.value=x.i;op.textContent=x.name;if(state.pick[s]===x.i)op.selected=true;se.appendChild(op)});
     se.onchange=function(){state.pick[s]=se.value===''?null:+se.value;drawChart(rows)};l.appendChild(se);pk.appendChild(l)})(s);
   drawChart(rows);
   $('foot').textContent='Odds are for entertainment. Probabilities come from every possible result of the remaining games, weighted by the odds picked above. Created by Brian Walby.';
@@ -301,6 +309,7 @@ function drawChart(rows){
   $('ctable').innerHTML=h+'</tbody></table>';
 }
 document.querySelectorAll('#mode button').forEach(function(b){b.onclick=function(){state.mode=b.dataset.m;refresh()}});
+$('who').onchange=function(){state.only=this.value===''?null:+this.value;render()};
 $('find').oninput=function(){state.q=this.value;render()};
 render();
 })();
