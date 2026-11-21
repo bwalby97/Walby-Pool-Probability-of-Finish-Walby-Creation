@@ -112,6 +112,7 @@ td.name{text-align:left;font-weight:500}
 .sd{color:var(--ink3);font-size:12px;margin-right:6px}
 .calc{position:fixed;inset:0;background:rgba(0,20,40,.35);display:none;align-items:center;justify-content:center;z-index:9;color:#fff;font:600 20px "Barlow Condensed",sans-serif}
 .vtabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}.vtabs button{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink2);border-radius:8px;padding:9px 16px;font:600 15px Barlow,sans-serif;cursor:pointer}.vtabs button[aria-selected=true]{background:var(--navy);color:#fff;border-color:var(--navy)}@media (prefers-color-scheme:dark){.vtabs button[aria-selected=true]{background:var(--maize);color:#00274c;border-color:var(--maize)}}.vtabs button:focus-visible{outline:3px solid var(--maize);outline-offset:1px}[hidden]{display:none!important}
+.who{color:var(--ink3);font-weight:400;font-size:12px;margin-left:8px}
 .busy{opacity:.5;transition:opacity .15s}
 @media (max-width:640px){main{padding:14px 12px 30px}header{padding:14px 12px 0}.pbar{display:none}}
 </style>
@@ -229,12 +230,12 @@ function render(){
   var P=D.pools[state.pool],r=compute();
   renderBracket();
   $('sub').textContent=D.season+' · '+D.asOf;
-  $('banner').innerHTML=D.sample?'<div class="banner"><b>Sample data.</b> This preview uses made-up teams and 300 made-up entries so you can try the bracket and what-if tools. Real picks load after the 2027 brackets come out.</div>':'';
+  $('banner').innerHTML=D.sample?'<div class="banner"><b>Sample data.</b> This preview uses made-up teams and 300 made-up entries so you can try the bracket and what-if tools. Real picks load after the 2027 brackets come out.</div>':(D.note?'<div class="banner"><b>Test.</b> '+D.note+'</div>':'');
   var tabs=$('tabs');tabs.innerHTML='';
   Object.keys(D.pools).forEach(function(k){var b=document.createElement('button');b.setAttribute('role','tab');b.textContent=D.pools[k].label;b.setAttribute('aria-selected',k===state.pool);b.onclick=function(){state.pool=k;state.pick=[];state.hypo={};refresh()};tabs.appendChild(b)});
   document.querySelectorAll('#mode button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.m===state.mode)});
   if(r.error){$('kpis').innerHTML='';$('games').innerHTML='';$('gnote').textContent='Exact odds start at the Sweet 16 ('+r.undecided+' games are still open). Check back when 15 or fewer games remain.';$('tbl').querySelector('tbody').innerHTML='';$('tnote').textContent='';return;}
-  var rows=r.entries.map(function(x,i){x.i=i;x.picks=P.entries[i].picks;return x});
+  var rows=r.entries.map(function(x,i){x.i=i;x.picks=P.entries[i].picks;x.who=P.entries[i].who;return x});
   rankByPoints(rows);
   var pot=P.pot!=null?P.pot:(P.fee?P.fee*rows.length:null);
   rows.forEach(function(x){x.exp=pot!=null?x.ePrize*pot:null;x.alive=x.cnt[5]>0;x.locked=x.min>0&&x.top[1]>0.9999});
@@ -262,10 +263,10 @@ function render(){
   th.querySelectorAll('button').forEach(function(b){b.onclick=function(){var k=b.dataset.k;state.sort=state.sort.k===k?{k:k,dir:-state.sort.dir}:{k:k,dir:(k==='name'||k==='rank')?1:-1};render()}});
   var val=function(x,k){return k==='t3'?x.top[3]:k==='t5'?x.top[5]:k==='t10'?x.top[10]:k==='cnt1'?x.any1:k==='exp'?x.ePrize:x[k]};
   var q=state.q.toLowerCase();
-  var list=rows.filter(function(x){return !q||x.name.toLowerCase().indexOf(q)>=0}).sort(function(a,b){var A=val(a,state.sort.k),B=val(b,state.sort.k);if(typeof A==='string')return state.sort.dir*A.localeCompare(B);return state.sort.dir*(A-B)||a.rank-b.rank});
+  var list=rows.filter(function(x){return !q||(x.name+' '+(x.who||'')).toLowerCase().indexOf(q)>=0}).sort(function(a,b){var A=val(a,state.sort.k),B=val(b,state.sort.k);if(typeof A==='string')return state.sort.dir*A.localeCompare(B);return state.sort.dir*(A-B)||a.rank-b.rank});
   var maxW=Math.max.apply(null,rows.map(function(x){return x.pWin}))||1;
   $('tbl').querySelector('tbody').innerHTML=list.map(function(x){
-    return '<tr><td class="l">'+x.rank+(x.tied?'T':'')+'</td><td class="name">'+x.name+(x.cnt[5]===0?'<span class="pill out">Out of the money</span>':'')+'</td><td>'+x.base+'</td><td>'+x.max+'</td><td>'+pct(x.pWin)+'<span class="pbar"><i style="width:'+Math.min(100,x.pWin/maxW*100)+'%"></i></span></td><td>'+pct(x.top[3])+'</td><td>'+pct(x.top[5])+'</td><td>'+pct(x.top[10])+'</td><td>'+(pot!=null?money(x.exp):pct(x.ePrize))+'</td><td>'+x.any1.toLocaleString()+' of '+r.leaves.toLocaleString()+'</td></tr>'}).join('');
+    return '<tr><td class="l">'+x.rank+(x.tied?'T':'')+'</td><td class="name">'+x.name+(x.who&&x.who!==x.name?'<span class="who">'+x.who+'</span>':'')+(x.cnt[5]===0?'<span class="pill out">Out of the money</span>':'')+'</td><td>'+x.base+'</td><td>'+x.max+'</td><td>'+pct(x.pWin)+'<span class="pbar"><i style="width:'+Math.min(100,x.pWin/maxW*100)+'%"></i></span></td><td>'+pct(x.top[3])+'</td><td>'+pct(x.top[5])+'</td><td>'+pct(x.top[10])+'</td><td>'+(pot!=null?money(x.exp):pct(x.ePrize))+'</td><td>'+x.any1.toLocaleString()+' of '+r.leaves.toLocaleString()+'</td></tr>'}).join('');
   $('tnote').textContent=(pot!=null?'Payout is each entry’s average share of a '+money(pot)+' pool. ':'')+'Ties split the prizes for the places they span equally. Click a heading to sort.';
   // pick selectors
   if(!state.pick.length)state.pick=sorted.slice(0,4).map(function(x){return x.i});
