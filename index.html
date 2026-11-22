@@ -252,7 +252,7 @@ function render(){ctx();
   var sorted=rows.slice().sort(function(a,b){return b.pWin-a.pWin});
   var alive=rows.filter(function(x){return x.any1>0}).length;
   $('kpis').innerHTML=[
-    ['Entries',rows.length],['Games left',r.undecided],['Possible outcomes',r.leaves.toLocaleString()],
+    ['Entries',rows.length],['Games left',r.undecided],[r.sim?'Simulated tournaments':'Possible outcomes',r.leaves.toLocaleString()],
     ['Still able to win',alive],['Favorite',sorted[0].name+' ('+pct(sorted[0].pWin)+')']
   ].map(function(k){return '<div class="kpi"><b>'+k[1]+'</b><span>'+k[0]+'</span></div>'}).join('');
   // games
@@ -275,8 +275,8 @@ function render(){ctx();
   var list=rows.filter(function(x){if(state.only!=null&&x.i!==state.only)return false;return !q||(x.name+' '+(x.who||'')).toLowerCase().indexOf(q)>=0}).sort(function(a,b){var A=val(a,state.sort.k),B=val(b,state.sort.k);if(typeof A==='string')return state.sort.dir*A.localeCompare(B);return state.sort.dir*(A-B)||a.rank-b.rank});
   var maxW=Math.max.apply(null,rows.map(function(x){return x.pWin}))||1;
   $('tbl').querySelector('tbody').innerHTML=list.map(function(x){
-    return '<tr><td class="l">'+x.rank+(x.tied?'T':'')+'</td><td class="name">'+x.name+(x.who&&x.who!==x.name?'<span class="who">'+x.who+'</span>':'')+(x.cnt[5]===0?'<span class="pill out">Out of the money</span>':'')+'</td><td>'+x.base+'</td><td>'+x.max+'</td><td>'+pct(x.pWin)+'<span class="pbar"><i style="width:'+Math.min(100,x.pWin/maxW*100)+'%"></i></span></td><td>'+pct(x.top[3])+'</td><td>'+pct(x.top[5])+'</td><td>'+pct(x.top[10])+'</td><td>'+(pot!=null?money(x.exp):pct(x.ePrize))+'</td><td>'+x.any1.toLocaleString()+' of '+r.leaves.toLocaleString()+'</td></tr>'}).join('');
-  $('tnote').textContent=(pot!=null?'Payout is each entry’s average share of a '+money(pot)+' pool. ':'')+'Ties split the prizes for the places they span equally. Click a heading to sort.';
+    return '<tr><td class="l">'+x.rank+(x.tied?'T':'')+'</td><td class="name">'+x.name+(x.who&&x.who!==x.name?'<span class="who">'+x.who+'</span>':'')+(x.cnt[5]===0?'<span class="pill out">'+(r.sim?'Unlikely to cash':'Out of the money')+'</span>':'')+'</td><td>'+x.base+'</td><td>'+x.max+'</td><td>'+pct(x.pWin)+'<span class="pbar"><i style="width:'+Math.min(100,x.pWin/maxW*100)+'%"></i></span></td><td>'+pct(x.top[3])+'</td><td>'+pct(x.top[5])+'</td><td>'+pct(x.top[10])+'</td><td>'+(pot!=null?money(x.exp):pct(x.ePrize))+'</td><td>'+x.any1.toLocaleString()+' of '+r.leaves.toLocaleString()+'</td></tr>'}).join('');
+  $('tnote').textContent=(pot!=null?'Payout is each entry’s average share of a '+money(pot)+' pool. ':'')+(r.sim?'These are estimates from '+r.sims.toLocaleString()+' simulated tournaments, accurate to about a quarter of a percentage point. Exact numbers start once 16 or fewer games remain. ':'')+'Ties split the prizes for the places they span equally. Click a heading to sort.';
   var dn=function(x){var re=/^[A-Za-z.'’-]+( [A-Za-z.'’-]+)+$/,w=(x.who||'').trim();if(re.test(w))return w;var n=(x.name||'').replace(/['’]s (Main )?Picks.*$/i,'').replace(/\s+(Picks|CC|Main|ChampionsClub|Champ)\b.*$/i,'').replace(/\s+The Founder$/i,'').trim();return re.test(n)?n:(w||n||x.name||'')};
   var parts=function(x){var t=dn(x).replace(/\s+(jr|sr|ii|iii|iv)\.?$/i,'').split(/\s+/);if(t.length>1&&t[t.length-1].length===1)t.unshift(t.pop());var l=t.pop();return {last:l,first:t.join(' ')}};
   var byLast=rows.slice().sort(function(a,b){var A=parts(a),B=parts(b);return A.last.localeCompare(B.last,undefined,{sensitivity:'base'})||A.first.localeCompare(B.first,undefined,{sensitivity:'base'})||a.name.localeCompare(b.name)});
