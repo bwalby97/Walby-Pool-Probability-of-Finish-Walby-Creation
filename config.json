@@ -1,0 +1,9 @@
+{
+  "season": 2026,
+  "note": "Replace with the 2027 values in March 2027. Scheduled updates stop and notify Brian while season is not 2027.",
+  "pools": {
+    "main":   {"label": "Main Pool",      "challengeId": 277, "groupId": "ad295612-8c5e-47fd-a9d2-fdddfee31c34", "fee": 15, "prizes": [0.7, 0.15, 0.08, 0.05, 0.02]},
+    "champs": {"label": "Champions Club", "challengeId": 277, "groupId": "16e8d6ab-95cf-453d-8243-837b37381b41", "fee": 25, "prizes": [0.7, 0.2, 0.1]},
+    "women":  {"label": "Women's Pool",   "challengeId": 278, "groupId": "e9d70d69-bc51-4325-9d32-90e5ec996cbf", "fee": 10, "prizes": [0.7, 0.2, 0.1]}
+  }
+}
